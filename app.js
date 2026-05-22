@@ -93,6 +93,7 @@ const commentsTree = document.querySelector("#commentsTree");
 const searchInput = document.querySelector("#searchInput");
 const pageTitle = document.querySelector("#pageTitle");
 const contextLabel = document.querySelector("#contextLabel");
+const homeButton = document.querySelector("#homeButton");
 
 const newThreadBtn = document.querySelector("#newThreadBtn");
 const newThreadDialog = document.querySelector("#newThreadDialog");
@@ -477,6 +478,7 @@ topReplyForm.addEventListener("submit", async event => {
 });
 
 backBtn.addEventListener("click", showThreadList);
+homeButton.addEventListener("click", showThreadList);
 searchInput.addEventListener("input", renderThreadList);
 
 pageTitle.textContent = `${formatClassCode(BOARD_INFO.classCode)}: ${formatTopicTitle(BOARD_INFO.topic)}`;
