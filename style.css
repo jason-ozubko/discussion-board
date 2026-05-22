@@ -185,26 +185,57 @@ textarea:disabled {
 .postSummary {
   width: 100%;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  border: 0;
-  background: transparent;
+  align-items: flex-start;
+  gap: 0.85rem;
   padding: 1rem;
-  text-align: left;
+  background: transparent;
 }
 
 .postSummary:hover {
-  background: #f0f5ff;
+  background: #f8fbff;
+}
+
+.expandPostButton {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 900;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.expandPostButton:hover {
+  background: #dbeafe;
 }
 
 .postSummaryText {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
-.postSummary h3 {
+.postTitleButton {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+}
+
+.postTitleButton h3 {
   margin: 0 0 0.4rem;
   color: #111827;
+  transition: color 120ms;
+}
+
+.postTitleButton:hover h3 {
+  color: #2563eb;
+  text-decoration: underline;
 }
 
 .postSummary p {
@@ -212,20 +243,7 @@ textarea:disabled {
   color: #4b5563;
 }
 
-.expandIndicator {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  background: #eef2ff;
-  color: #3730a3;
-  font-weight: 900;
-  font-size: 1.25rem;
-}
-
-.postCard.expanded .expandIndicator {
+.postCard.expanded .expandPostButton {
   background: #dbeafe;
 }
 
@@ -354,6 +372,22 @@ dialog::backdrop {
   color: #6b7280;
   padding: 1rem;
   text-align: center;
+}
+
+#singlePostContainer {
+  margin-top: 1rem;
+}
+
+#singlePostContainer .postCard {
+  border-color: #d1d5db;
+}
+
+#singlePostContainer .postSummary {
+  background: #ffffff;
+}
+
+#singlePostContainer .postPreview {
+  display: none;
 }
 
 @media (max-width: 650px) {

@@ -85,6 +85,11 @@ const pathPartsToThreads = [
 
 const threadsRef = collection(db, ...pathPartsToThreads);
 
+const threadListView = document.querySelector("#threadListView");
+const singlePostView = document.querySelector("#singlePostView");
+const singlePostContainer = document.querySelector("#singlePostContainer");
+const backBtn = document.querySelector("#backBtn");
+
 const threadList = document.querySelector("#threadList");
 const searchInput = document.querySelector("#searchInput");
 const newThreadBtn = document.querySelector("#newThreadBtn");
@@ -102,6 +107,7 @@ const commentTemplate = document.querySelector("#commentTemplate");
 
 let allThreads = [];
 let expandedPostIds = new Set();
+let activeSinglePostId = null;
 let unsubscribeByPostId = new Map();
 let commentsByPostId = new Map();
 
@@ -151,10 +157,36 @@ function updateExpandAllButton() {
 }
 
 function showThreadList() {
-  // With inline expansion, "home" simply collapses expanded posts and returns focus to the list.
-  expandedPostIds.clear();
+  activeSinglePostId = null;
+  singlePostView.classList.add("hidden");
+  threadListView.classList.remove("hidden");
   renderThreadList();
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showSinglePost(thread) {
+  activeSinglePostId = thread.id;
+  expandedPostIds.add(thread.id);
+  listenForComments(thread.id);
+
+  threadListView.classList.add("hidden");
+  singlePostView.classList.remove("hidden");
+
+  renderSinglePost();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderSinglePost() {
+  singlePostContainer.innerHTML = "";
+
+  const thread = allThreads.find(item => item.id === activeSinglePostId);
+  if (!thread) {
+    singlePostContainer.innerHTML = `<div class="emptyState">This post could not be found.</div>`;
+    return;
+  }
+
+  const node = buildPostNode(thread, { singleView: true });
+  singlePostContainer.appendChild(node);
 }
 
 function commentsRefForPost(postId) {
@@ -179,7 +211,11 @@ function listenForComments(postId) {
       }))
     );
 
-    renderThreadList();
+    if (activeSinglePostId === postId) {
+      renderSinglePost();
+    } else {
+      renderThreadList();
+    }
   }, error => {
     console.error("Could not load comments.", error);
   });
@@ -188,6 +224,8 @@ function listenForComments(postId) {
 }
 
 function stopListeningForComments(postId) {
+  if (activeSinglePostId === postId) return;
+
   const unsubscribe = unsubscribeByPostId.get(postId);
   if (unsubscribe) unsubscribe();
 
@@ -218,21 +256,21 @@ function renderThreadList() {
   }
 
   for (const thread of visibleThreads) {
-    threadList.appendChild(buildPostNode(thread));
+    threadList.appendChild(buildPostNode(thread, { singleView: false }));
   }
 
   updateExpandAllButton();
 }
 
-function buildPostNode(thread) {
+function buildPostNode(thread, options = {}) {
   const node = postTemplate.content.firstElementChild.cloneNode(true);
 
-  const isExpanded = expandedPostIds.has(thread.id);
+  const isExpanded = options.singleView || expandedPostIds.has(thread.id);
   node.classList.toggle("expanded", isExpanded);
 
-  const summaryButton = node.querySelector(".postSummary");
+  const expandButton = node.querySelector(".expandPostButton");
+  const titleButton = node.querySelector(".postTitleButton");
   const expandedArea = node.querySelector(".postExpanded");
-  const expandIndicator = node.querySelector(".expandIndicator");
 
   node.querySelector(".postTitle").textContent = thread.title || "Untitled post";
   node.querySelector(".postMeta").textContent =
@@ -241,11 +279,22 @@ function buildPostNode(thread) {
   node.querySelector(".postBody").textContent = thread.body || "";
 
   expandedArea.classList.toggle("hidden", !isExpanded);
-  expandIndicator.textContent = isExpanded ? "−" : "+";
+  expandButton.textContent = isExpanded ? "−" : "+";
+  expandButton.setAttribute("aria-label", isExpanded ? "Collapse post" : "Expand post");
 
-  summaryButton.addEventListener("click", () => {
-    setPostExpanded(thread.id, !expandedPostIds.has(thread.id));
-  });
+  if (options.singleView) {
+    expandButton.classList.add("hidden");
+  } else {
+    expandButton.addEventListener("click", event => {
+      event.stopPropagation();
+      setPostExpanded(thread.id, !expandedPostIds.has(thread.id));
+    });
+
+    titleButton.addEventListener("click", event => {
+      event.stopPropagation();
+      showSinglePost(thread);
+    });
+  }
 
   if (isExpanded) {
     setupTopReplyUI(node, thread);
@@ -432,7 +481,11 @@ function listenForThreads() {
       ...docSnap.data()
     }));
 
-    renderThreadList();
+    if (activeSinglePostId) {
+      renderSinglePost();
+    } else {
+      renderThreadList();
+    }
   }, error => {
     threadList.innerHTML = `<div class="emptyState">Could not load posts. Check your Firebase config and Firestore rules.</div>`;
     console.error(error);
@@ -498,6 +551,7 @@ expandAllBtn.addEventListener("click", () => {
 });
 
 homeButton.addEventListener("click", showThreadList);
+backBtn.addEventListener("click", showThreadList);
 
 searchInput.addEventListener("input", () => {
   renderThreadList();

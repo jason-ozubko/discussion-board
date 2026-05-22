@@ -33,6 +33,11 @@
 
       <div id="threadList" class="threadList"></div>
     </section>
+
+    <section id="singlePostView" class="panel hidden">
+      <button id="backBtn" class="linkButton">← Back to Posts</button>
+      <div id="singlePostContainer"></div>
+    </section>
   </main>
 
   <dialog id="newThreadDialog">
@@ -54,14 +59,16 @@
 
   <template id="postTemplate">
     <article class="postCard">
-      <button class="postSummary">
+      <div class="postSummary">
+        <button class="expandPostButton" aria-label="Expand post">+</button>
         <div class="postSummaryText">
-          <h3 class="postTitle"></h3>
+          <button class="postTitleButton">
+            <h3 class="postTitle"></h3>
+          </button>
           <div class="meta postMeta"></div>
           <p class="postPreview"></p>
         </div>
-        <div class="expandIndicator">+</div>
-      </button>
+      </div>
 
       <div class="postExpanded hidden">
         <p class="postBody"></p>
