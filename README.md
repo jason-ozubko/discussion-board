@@ -188,3 +188,48 @@ PSYC250: General Questions
 ```
 
 The `semester` URL argument is still used for Firebase organization but is not shown in the main page title.
+
+
+## Optional code parameter
+
+This version supports an additional URL parameter:
+
+```text
+&code=4jk38s
+```
+
+Example:
+
+```text
+?semester=fall2026&class=psyc250&topic=general-questions&code=4jk38s
+```
+
+The `code` becomes part of the Firebase database path, so only people with the exact link will access that board.
+
+This is NOT true authentication/security, but it prevents casual discovery or guessing of URLs.
+
+You can:
+- change the code every semester
+- use different codes per class
+- rotate codes anytime
+
+The Firebase structure now looks like:
+
+```text
+semesters/{semester}/classes/{class}/topics/{topic}/codes/{code}/threads/{threadId}
+```
+
+
+## Updated Firestore Rules
+
+```js
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /semesters/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```

@@ -69,7 +69,8 @@ const urlParams = new URLSearchParams(window.location.search);
 const BOARD_INFO = {
   semester: cleanUrlPart(urlParams.get("semester"), "demo-semester"),
   classCode: cleanUrlPart(urlParams.get("class"), "demo-class"),
-  topic: cleanUrlPart(urlParams.get("topic"), "general")
+  topic: cleanUrlPart(urlParams.get("topic"), "general"),
+  code: cleanUrlPart(urlParams.get("code"), "default")
 };
 
 const app = initializeApp(firebaseConfig);
@@ -83,6 +84,8 @@ const threadsRef = collection(
   BOARD_INFO.classCode,
   "topics",
   BOARD_INFO.topic,
+  "codes",
+  BOARD_INFO.code,
   "threads"
 );
 
@@ -272,6 +275,8 @@ function listenForComments(threadId) {
     BOARD_INFO.classCode,
     "topics",
     BOARD_INFO.topic,
+    "codes",
+    BOARD_INFO.code,
     "threads",
     threadId,
     "comments"
@@ -371,6 +376,8 @@ async function addComment({ author, body, parentId = null }) {
     BOARD_INFO.classCode,
     "topics",
     BOARD_INFO.topic,
+    "codes",
+    BOARD_INFO.code,
     "threads",
     currentThread.id,
     "comments"
@@ -391,6 +398,8 @@ async function addComment({ author, body, parentId = null }) {
     BOARD_INFO.classCode,
     "topics",
     BOARD_INFO.topic,
+    "codes",
+    BOARD_INFO.code,
     "threads",
     currentThread.id
   ), {
