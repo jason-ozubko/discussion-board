@@ -269,7 +269,7 @@ function listenForComments(threadId) {
     BOARD_INFO.semester,
     "classes",
     BOARD_INFO.classCode,
-    "boards",
+    "topics",
     BOARD_INFO.topic,
     "threads",
     threadId,
@@ -362,7 +362,18 @@ function buildCommentNode(comment, byParent, depth) {
 async function addComment({ author, body, parentId = null }) {
   if (!currentThread) return;
 
-  const commentsRef = collection(db, "courses", COURSE_ID, "threads", currentThread.id, "comments");
+  const commentsRef = collection(
+    db,
+    "semesters",
+    BOARD_INFO.semester,
+    "classes",
+    BOARD_INFO.classCode,
+    "topics",
+    BOARD_INFO.topic,
+    "threads",
+    currentThread.id,
+    "comments"
+  );
 
   await addDoc(commentsRef, {
     author: author.trim(),
@@ -377,7 +388,7 @@ async function addComment({ author, body, parentId = null }) {
     BOARD_INFO.semester,
     "classes",
     BOARD_INFO.classCode,
-    "boards",
+    "topics",
     BOARD_INFO.topic,
     "threads",
     currentThread.id
