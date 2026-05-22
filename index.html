@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Class Discussion Board</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1 id="pageTitle">Class Discussion Board</h1>
+      <p id="contextLabel" class="contextLabel"></p>
+    </div>
+  </header>
+
+  <main class="app">
+    <section id="threadListView" class="panel">
+      <div class="panelHeader">
+        <h2>Posts</h2>
+        <div class="panelActions">
+          <input id="searchInput" type="search" placeholder="Search posts..." />
+          <button id="newThreadBtn" class="primary newPostButton">New Post</button>
+        </div>
+      </div>
+      <div id="threadList" class="threadList"></div>
+    </section>
+
+    <section id="threadView" class="panel hidden">
+      <button id="backBtn" class="linkButton">← Back to Posts</button>
+
+      <article class="threadPageHeader">
+        <h2 id="threadTitle"></h2>
+        <div id="threadMeta" class="meta"></div>
+        <p id="threadBody"></p>
+      </article>
+
+      <section class="threadActions">
+        <button id="topReplyToggle" class="linkButton">Reply</button>
+        <form id="topReplyForm" class="inlineReplyForm hidden">
+          <input name="author" placeholder="Your name" required />
+          <textarea name="body" placeholder="Write your reply..." required></textarea>
+          <div class="formActions">
+            <button id="topReplyPostButton" type="submit" class="primary small">Post Reply</button>
+            <button type="button" id="topReplyCancel" class="secondary small">Cancel</button>
+          </div>
+        </form>
+        <div id="topReplySaving" class="savingIndicator hidden" aria-live="polite">
+          <span class="spinner"></span>
+          <span>Posting reply...</span>
+        </div>
+      </section>
+
+      <section>
+        <h3>Comments</h3>
+        <div id="commentsTree" class="commentsTree"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="newThreadDialog">
+    <form id="newThreadForm" method="dialog" class="modalForm">
+      <h2>Start a New Post</h2>
+      <input name="title" placeholder="Post title" required />
+      <input name="author" placeholder="Your name" required />
+      <textarea name="body" placeholder="What do you want to discuss?" required></textarea>
+      <div class="modalActions">
+        <button id="cancelNewThread" type="button" class="secondary">Cancel</button>
+        <button id="postThreadButton" type="submit" class="primary">Post</button>
+        <div id="newThreadSaving" class="savingIndicator hidden" aria-live="polite">
+          <span class="spinner"></span>
+          <span>Posting post...</span>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="commentTemplate">
+    <div class="comment">
+      <div class="commentHeader">
+        <strong class="commentAuthor"></strong>
+        <span class="commentDate"></span>
+      </div>
+      <p class="commentBody"></p>
+      <button class="replyToggle linkButton">Reply</button>
+      <form class="inlineReplyForm hidden">
+        <input name="author" placeholder="Your name" required />
+        <textarea name="body" placeholder="Write a reply..." required></textarea>
+        <div class="formActions">
+          <button type="submit" class="primary small">Post Reply</button>
+          <button type="button" class="cancelReply secondary small">Cancel</button>
+        </div>
+      </form>
+      <div class="children"></div>
+    </div>
+  </template>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
