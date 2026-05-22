@@ -27,9 +27,32 @@ body {
   font-size: 1.5rem;
 }
 
-.topbar p {
-  margin: 0.25rem 0 0;
-  color: #6b7280;
+.homeButton {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.homeButton h1 {
+  transition: color 120ms;
+}
+
+.homeButton:hover h1 {
+  color: #2563eb;
+}
+
+.contextLabel {
+  display: inline-block;
+  margin-top: 0.45rem !important;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3 !important;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .app {
@@ -46,6 +69,16 @@ body {
   box-shadow: 0 8px 20px rgba(0,0,0,0.04);
 }
 
+.privacyNotice {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+  line-height: 1.4;
+}
+
 .panelHeader {
   display: flex;
   justify-content: space-between;
@@ -56,6 +89,12 @@ body {
 
 .panelHeader h2 {
   margin: 0;
+}
+
+.panelActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 input,
@@ -95,17 +134,17 @@ button {
   color: white;
 }
 
+.secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
 .primary:disabled,
 .secondary:disabled,
 input:disabled,
 textarea:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-}
-
-.secondary {
-  background: #e5e7eb;
-  color: #111827;
 }
 
 .small {
@@ -124,32 +163,82 @@ textarea:disabled {
   display: none !important;
 }
 
+.newPostButton,
+#expandAllBtn {
+  min-width: 120px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .threadList {
   display: grid;
   gap: 0.75rem;
 }
 
-.threadCard {
+.postCard {
   border: 1px solid #e3e7ef;
   border-radius: 12px;
-  padding: 1rem;
   background: #fbfcff;
-  transition: background 120ms, transform 120ms;
+  overflow: hidden;
 }
 
-.threadCard:hover {
+.postSummary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 0;
+  background: transparent;
+  padding: 1rem;
+  text-align: left;
+}
+
+.postSummary:hover {
   background: #f0f5ff;
-  transform: translateY(-1px);
 }
 
-.threadCard h3 {
+.postSummaryText {
+  min-width: 0;
+}
+
+.postSummary h3 {
   margin: 0 0 0.4rem;
   color: #111827;
 }
 
-.threadCard p {
+.postSummary p {
   margin: 0.35rem 0 0;
   color: #4b5563;
+}
+
+.expandIndicator {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 900;
+  font-size: 1.25rem;
+}
+
+.postCard.expanded .expandIndicator {
+  background: #dbeafe;
+}
+
+.postExpanded {
+  border-top: 1px solid #e3e7ef;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+.postBody {
+  white-space: pre-wrap;
+  margin: 0 0 1rem;
+  line-height: 1.5;
 }
 
 .meta {
@@ -157,29 +246,10 @@ textarea:disabled {
   font-size: 0.9rem;
 }
 
-.threadPageHeader {
-  border-bottom: 1px solid #e5e7eb;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-}
-
-.threadPageHeader h2 {
-  margin-bottom: 0.35rem;
-}
-
 .threadActions {
   border-bottom: 1px solid #e5e7eb;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
-}
-
-.replyBox {
-  border: 1px solid #e3e7ef;
-  border-radius: 12px;
-  padding: 1rem;
-  background: #fbfcff;
-  margin: 1rem 0;
 }
 
 form {
@@ -225,26 +295,6 @@ form {
   max-width: 680px;
 }
 
-dialog {
-  border: 0;
-  border-radius: 16px;
-  padding: 0;
-  width: min(650px, calc(100vw - 2rem));
-  box-shadow: 0 20px 70px rgba(0,0,0,0.25);
-}
-
-dialog::backdrop {
-  background: rgba(17, 24, 39, 0.55);
-}
-
-.modalForm {
-  padding: 1.25rem;
-}
-
-.modalForm h2 {
-  margin-top: 0;
-}
-
 .modalActions,
 .formActions {
   display: flex;
@@ -256,29 +306,6 @@ dialog::backdrop {
 .inlineReplyForm .formActions {
   justify-content: flex-start;
 }
-
-.emptyState {
-  color: #6b7280;
-  padding: 1rem;
-  text-align: center;
-}
-
-@media (max-width: 650px) {
-  .topbar,
-  .panelHeader {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  #searchInput {
-    max-width: none;
-  }
-
-  .children {
-    margin-left: 0.5rem;
-  }
-}
-
 
 .savingIndicator {
   display: inline-flex;
@@ -303,75 +330,49 @@ dialog::backdrop {
   }
 }
 
-
-.boardLabel {
-  display: inline-block;
-  margin-top: 0.45rem !important;
-  padding: 0.25rem 0.55rem;
-  border-radius: 999px;
-  background: #eef2ff;
-  color: #3730a3 !important;
-  font-size: 0.85rem;
-  font-weight: 700;
+dialog {
+  border: 0;
+  border-radius: 16px;
+  padding: 0;
+  width: min(650px, calc(100vw - 2rem));
+  box-shadow: 0 20px 70px rgba(0,0,0,0.25);
 }
 
+dialog::backdrop {
+  background: rgba(17, 24, 39, 0.55);
+}
 
-.panelActions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.modalForm {
+  padding: 1.25rem;
+}
+
+.modalForm h2 {
+  margin-top: 0;
+}
+
+.emptyState {
+  color: #6b7280;
+  padding: 1rem;
+  text-align: center;
 }
 
 @media (max-width: 650px) {
+  .topbar,
+  .panelHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .panelActions {
     flex-direction: column;
     align-items: stretch;
   }
-}
 
+  #searchInput {
+    max-width: none;
+  }
 
-.contextLabel {
-  display: inline-block;
-  margin-top: 0.45rem !important;
-  padding: 0.25rem 0.55rem;
-  border-radius: 999px;
-  background: #eef2ff;
-  color: #3730a3 !important;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.newPostButton {
-  min-width: 120px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-
-.homeButton {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  margin: 0;
-  text-align: left;
-  cursor: pointer;
-}
-
-.homeButton h1 {
-  transition: color 120ms;
-}
-
-.homeButton:hover h1 {
-  color: #2563eb;
-}
-
-
-.privacyNotice {
-  margin-bottom: 1rem;
-  padding: 0.85rem 1rem;
-  border-radius: 12px;
-  border: 1px solid #fde68a;
-  background: #fffbeb;
-  color: #92400e;
-  line-height: 1.4;
+  .children {
+    margin-left: 0.5rem;
+  }
 }

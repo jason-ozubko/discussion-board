@@ -1,6 +1,5 @@
 // Class Discussion Board
-// Replace this Firebase config with the config from your own Firebase project.
-// Firebase Console > Project Settings > General > Your apps > Web app.
+// Firebase config is intentionally public; access control is handled by Firestore rules.
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
@@ -25,10 +24,6 @@ const firebaseConfig = {
   appId: "1:331939389198:web:9805802857e192646bc15f",
   measurementId: "G-ND42V2LRK1"
 };
-
-// This app can serve many boards from the same GitHub Pages site.
-// Example:
-// index.html?semester=fall2026&class=psyc250&topic=questions
 
 function cleanUrlPart(value, fallback) {
   const cleaned = String(value || "")
@@ -76,8 +71,7 @@ const BOARD_INFO = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const threadsRef = collection(
-  db,
+const pathPartsToThreads = [
   "semesters",
   BOARD_INFO.semester,
   "classes",
@@ -87,74 +81,29 @@ const threadsRef = collection(
   "codes",
   BOARD_INFO.code,
   "threads"
-);
+];
 
-const threadListView = document.querySelector("#threadListView");
-const threadView = document.querySelector("#threadView");
+const threadsRef = collection(db, ...pathPartsToThreads);
+
 const threadList = document.querySelector("#threadList");
-const commentsTree = document.querySelector("#commentsTree");
 const searchInput = document.querySelector("#searchInput");
-const pageTitle = document.querySelector("#pageTitle");
-const contextLabel = document.querySelector("#contextLabel");
-const homeButton = document.querySelector("#homeButton");
-
 const newThreadBtn = document.querySelector("#newThreadBtn");
 const newThreadDialog = document.querySelector("#newThreadDialog");
 const newThreadForm = document.querySelector("#newThreadForm");
 const cancelNewThread = document.querySelector("#cancelNewThread");
 const postThreadButton = document.querySelector("#postThreadButton");
 const newThreadSaving = document.querySelector("#newThreadSaving");
-const backBtn = document.querySelector("#backBtn");
-
-const threadTitle = document.querySelector("#threadTitle");
-const threadMeta = document.querySelector("#threadMeta");
-const threadBody = document.querySelector("#threadBody");
-const topReplyToggle = document.querySelector("#topReplyToggle");
-const topReplyForm = document.querySelector("#topReplyForm");
-const topReplyCancel = document.querySelector("#topReplyCancel");
-const topReplyPostButton = document.querySelector("#topReplyPostButton");
-const topReplySaving = document.querySelector("#topReplySaving");
+const pageTitle = document.querySelector("#pageTitle");
+const contextLabel = document.querySelector("#contextLabel");
+const homeButton = document.querySelector("#homeButton");
+const expandAllBtn = document.querySelector("#expandAllBtn");
+const postTemplate = document.querySelector("#postTemplate");
 const commentTemplate = document.querySelector("#commentTemplate");
 
 let allThreads = [];
-let currentThread = null;
-let unsubscribeComments = null;
-
-
-
-function setTopReplySaving(isSaving) {
-  topReplyForm.classList.add("hidden");
-  topReplyToggle.classList.add("hidden");
-  topReplySaving.classList.toggle("hidden", !isSaving);
-
-  topReplyForm.author.disabled = isSaving;
-  topReplyForm.body.disabled = isSaving;
-  topReplyPostButton.disabled = isSaving;
-  topReplyCancel.disabled = isSaving;
-}
-
-function resetTopReplyUI() {
-  topReplyForm.reset();
-  topReplyForm.classList.add("hidden");
-  topReplySaving.classList.add("hidden");
-  topReplyToggle.classList.remove("hidden");
-
-  topReplyForm.author.disabled = false;
-  topReplyForm.body.disabled = false;
-  topReplyPostButton.disabled = false;
-  topReplyCancel.disabled = false;
-}
-
-function setNewThreadFormSaving(isSaving) {
-  newThreadForm.title.disabled = isSaving;
-  newThreadForm.author.disabled = isSaving;
-  newThreadForm.body.disabled = isSaving;
-  cancelNewThread.disabled = isSaving;
-  postThreadButton.disabled = isSaving;
-
-  postThreadButton.classList.toggle("hidden", isSaving);
-  newThreadSaving.classList.toggle("hidden", !isSaving);
-}
+let expandedPostIds = new Set();
+let unsubscribeByPostId = new Map();
+let commentsByPostId = new Map();
 
 function formatDate(timestamp) {
   if (!timestamp || !timestamp.toDate) return "just now";
@@ -173,130 +122,217 @@ function plainPreview(text, maxLength = 170) {
   return cleaned.slice(0, maxLength).trim() + "…";
 }
 
-function showThreadList() {
-  currentThread = null;
+function setNewThreadFormSaving(isSaving) {
+  newThreadForm.title.disabled = isSaving;
+  newThreadForm.author.disabled = isSaving;
+  newThreadForm.body.disabled = isSaving;
+  cancelNewThread.disabled = isSaving;
+  postThreadButton.disabled = isSaving;
 
-  if (unsubscribeComments) {
-    unsubscribeComments();
-    unsubscribeComments = null;
-  }
-
-  threadView.classList.add("hidden");
-  threadListView.classList.remove("hidden");
+  postThreadButton.classList.toggle("hidden", isSaving);
+  newThreadSaving.classList.toggle("hidden", !isSaving);
 }
 
-function showThread(thread) {
-  currentThread = thread;
-
-  threadListView.classList.add("hidden");
-  threadView.classList.remove("hidden");
-
-  threadTitle.textContent = thread.title;
-  threadMeta.textContent = `Posted by ${thread.author || "Anonymous"} · ${formatDate(thread.createdAt)} · ${thread.commentCount || 0} comments`;
-  threadBody.textContent = thread.body || "";
-
-  resetTopReplyUI();
-
-  listenForComments(thread.id);
-}
-
-function renderThreadList() {
+function getVisibleThreads() {
   const searchTerm = searchInput.value.trim().toLowerCase();
 
-  const visibleThreads = allThreads.filter(thread => {
+  return allThreads.filter(thread => {
     const haystack = `${thread.title || ""} ${thread.body || ""} ${thread.author || ""}`.toLowerCase();
     return haystack.includes(searchTerm);
   });
+}
 
+function updateExpandAllButton() {
+  const visibleThreads = getVisibleThreads();
+  const allVisibleExpanded =
+    visibleThreads.length > 0 && visibleThreads.every(thread => expandedPostIds.has(thread.id));
+
+  expandAllBtn.textContent = allVisibleExpanded ? "Collapse All" : "Expand All";
+}
+
+function showThreadList() {
+  // With inline expansion, "home" simply collapses expanded posts and returns focus to the list.
+  expandedPostIds.clear();
+  renderThreadList();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function commentsRefForPost(postId) {
+  return collection(db, ...pathPartsToThreads, postId, "comments");
+}
+
+function postDocRef(postId) {
+  return doc(db, ...pathPartsToThreads, postId);
+}
+
+function listenForComments(postId) {
+  if (unsubscribeByPostId.has(postId)) return;
+
+  const q = query(commentsRefForPost(postId), orderBy("createdAt", "asc"));
+
+  const unsubscribe = onSnapshot(q, snapshot => {
+    commentsByPostId.set(
+      postId,
+      snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }))
+    );
+
+    renderThreadList();
+  }, error => {
+    console.error("Could not load comments.", error);
+  });
+
+  unsubscribeByPostId.set(postId, unsubscribe);
+}
+
+function stopListeningForComments(postId) {
+  const unsubscribe = unsubscribeByPostId.get(postId);
+  if (unsubscribe) unsubscribe();
+
+  unsubscribeByPostId.delete(postId);
+  commentsByPostId.delete(postId);
+}
+
+function setPostExpanded(postId, shouldExpand) {
+  if (shouldExpand) {
+    expandedPostIds.add(postId);
+    listenForComments(postId);
+  } else {
+    expandedPostIds.delete(postId);
+    stopListeningForComments(postId);
+  }
+
+  renderThreadList();
+}
+
+function renderThreadList() {
+  const visibleThreads = getVisibleThreads();
   threadList.innerHTML = "";
 
   if (visibleThreads.length === 0) {
     threadList.innerHTML = `<div class="emptyState">No posts yet. Start the first one!</div>`;
+    updateExpandAllButton();
     return;
   }
 
   for (const thread of visibleThreads) {
-    const card = document.createElement("article");
-    card.className = "threadCard";
-    card.tabIndex = 0;
-    card.innerHTML = `
-      <h3></h3>
-      <div class="meta"></div>
-      <p></p>
-    `;
-
-    card.querySelector("h3").textContent = thread.title || "Untitled post";
-    card.querySelector(".meta").textContent =
-      `${thread.commentCount || 0} comments · posted by ${thread.author || "Anonymous"} · ${formatDate(thread.createdAt)}`;
-    card.querySelector("p").textContent = plainPreview(thread.body);
-
-    card.addEventListener("click", () => showThread(thread));
-    card.addEventListener("keydown", event => {
-      if (event.key === "Enter" || event.key === " ") showThread(thread);
-    });
-
-    threadList.appendChild(card);
+    threadList.appendChild(buildPostNode(thread));
   }
+
+  updateExpandAllButton();
 }
 
-function listenForThreads() {
-  const q = query(threadsRef, orderBy("createdAt", "desc"));
+function buildPostNode(thread) {
+  const node = postTemplate.content.firstElementChild.cloneNode(true);
 
-  onSnapshot(q, snapshot => {
-    allThreads = snapshot.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
+  const isExpanded = expandedPostIds.has(thread.id);
+  node.classList.toggle("expanded", isExpanded);
 
-    renderThreadList();
+  const summaryButton = node.querySelector(".postSummary");
+  const expandedArea = node.querySelector(".postExpanded");
+  const expandIndicator = node.querySelector(".expandIndicator");
 
-    if (currentThread) {
-      const updatedThread = allThreads.find(t => t.id === currentThread.id);
-      if (updatedThread) {
-        currentThread = updatedThread;
-        threadMeta.textContent =
-          `Posted by ${updatedThread.author || "Anonymous"} · ${formatDate(updatedThread.createdAt)} · ${updatedThread.commentCount || 0} comments`;
-      }
+  node.querySelector(".postTitle").textContent = thread.title || "Untitled post";
+  node.querySelector(".postMeta").textContent =
+    `${thread.commentCount || 0} comments · posted by ${thread.author || "Anonymous"} · ${formatDate(thread.createdAt)}`;
+  node.querySelector(".postPreview").textContent = plainPreview(thread.body);
+  node.querySelector(".postBody").textContent = thread.body || "";
+
+  expandedArea.classList.toggle("hidden", !isExpanded);
+  expandIndicator.textContent = isExpanded ? "−" : "+";
+
+  summaryButton.addEventListener("click", () => {
+    setPostExpanded(thread.id, !expandedPostIds.has(thread.id));
+  });
+
+  if (isExpanded) {
+    setupTopReplyUI(node, thread);
+    renderCommentsForPost(node, thread);
+  }
+
+  return node;
+}
+
+function setupTopReplyUI(node, thread) {
+  const replyToggle = node.querySelector(".topReplyToggle");
+  const replyForm = node.querySelector(".topReplyForm");
+  const replyCancel = node.querySelector(".topReplyCancel");
+  const replyPostButton = node.querySelector(".topReplyPostButton");
+  const replySaving = node.querySelector(".topReplySaving");
+
+  function resetTopReplyUI() {
+    replyForm.reset();
+    replyForm.classList.add("hidden");
+    replySaving.classList.add("hidden");
+    replyToggle.classList.remove("hidden");
+
+    replyForm.author.disabled = false;
+    replyForm.body.disabled = false;
+    replyPostButton.disabled = false;
+    replyCancel.disabled = false;
+  }
+
+  function setTopReplySaving(isSaving) {
+    replyForm.classList.add("hidden");
+    replyToggle.classList.add("hidden");
+    replySaving.classList.toggle("hidden", !isSaving);
+
+    replyForm.author.disabled = isSaving;
+    replyForm.body.disabled = isSaving;
+    replyPostButton.disabled = isSaving;
+    replyCancel.disabled = isSaving;
+  }
+
+  replyToggle.addEventListener("click", event => {
+    event.stopPropagation();
+    replyForm.classList.remove("hidden");
+    replyToggle.classList.add("hidden");
+    replyForm.author.focus();
+  });
+
+  replyCancel.addEventListener("click", event => {
+    event.stopPropagation();
+    resetTopReplyUI();
+  });
+
+  replyForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (replyPostButton.disabled) return;
+
+    const replyData = {
+      author: replyForm.author.value,
+      body: replyForm.body.value,
+      parentId: null
+    };
+
+    setTopReplySaving(true);
+
+    try {
+      await addComment(thread.id, replyData);
+      resetTopReplyUI();
+    } catch (error) {
+      console.error("Could not post reply. Check Firebase config and Firestore rules.", error);
+      alert("The reply could not be saved. Check your Firebase config and Firestore rules.");
+      replySaving.classList.add("hidden");
+      replyForm.classList.remove("hidden");
+      replyToggle.classList.add("hidden");
+
+      replyForm.author.disabled = false;
+      replyForm.body.disabled = false;
+      replyPostButton.disabled = false;
+      replyCancel.disabled = false;
     }
-  }, error => {
-    threadList.innerHTML = `<div class="emptyState">Could not load posts. Check your Firebase config and Firestore rules.</div>`;
-    console.error(error);
   });
 }
 
-function listenForComments(threadId) {
-  if (unsubscribeComments) unsubscribeComments();
+function renderCommentsForPost(postNode, thread) {
+  const commentsTree = postNode.querySelector(".commentsTree");
+  const comments = commentsByPostId.get(thread.id) || [];
 
-  const commentsRef = collection(
-    db,
-    "semesters",
-    BOARD_INFO.semester,
-    "classes",
-    BOARD_INFO.classCode,
-    "topics",
-    BOARD_INFO.topic,
-    "codes",
-    BOARD_INFO.code,
-    "threads",
-    threadId,
-    "comments"
-  );
-  const q = query(commentsRef, orderBy("createdAt", "asc"));
-
-  unsubscribeComments = onSnapshot(q, snapshot => {
-    const comments = snapshot.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
-
-    renderComments(comments);
-  }, error => {
-    commentsTree.innerHTML = `<div class="emptyState">Could not load comments.</div>`;
-    console.error(error);
-  });
-}
-
-function renderComments(comments) {
   commentsTree.innerHTML = "";
 
   if (comments.length === 0) {
@@ -315,11 +351,11 @@ function renderComments(comments) {
   const roots = byParent.get("ROOT") || [];
 
   for (const rootComment of roots) {
-    commentsTree.appendChild(buildCommentNode(rootComment, byParent, 0));
+    commentsTree.appendChild(buildCommentNode(thread.id, rootComment, byParent));
   }
 }
 
-function buildCommentNode(comment, byParent, depth) {
+function buildCommentNode(postId, comment, byParent) {
   const node = commentTemplate.content.firstElementChild.cloneNode(true);
 
   node.querySelector(".commentAuthor").textContent = comment.author || "Anonymous";
@@ -334,8 +370,7 @@ function buildCommentNode(comment, byParent, depth) {
   replyButton.addEventListener("click", () => {
     replyForm.classList.remove("hidden");
     replyButton.classList.add("hidden");
-    const authorInput = replyForm.querySelector("input[name='author']");
-    authorInput.focus();
+    replyForm.querySelector("input[name='author']").focus();
   });
 
   cancelButton.addEventListener("click", () => {
@@ -346,65 +381,61 @@ function buildCommentNode(comment, byParent, depth) {
 
   replyForm.addEventListener("submit", async event => {
     event.preventDefault();
-    await addComment({
+
+    const replyData = {
       author: replyForm.author.value,
       body: replyForm.body.value,
       parentId: comment.id
-    });
+    };
+
     replyForm.reset();
     replyForm.classList.add("hidden");
     replyButton.classList.remove("hidden");
+
+    try {
+      await addComment(postId, replyData);
+    } catch (error) {
+      console.error("Could not post nested reply.", error);
+      alert("The reply could not be saved. Check your Firebase config and Firestore rules.");
+    }
   });
 
   const childComments = byParent.get(comment.id) || [];
 
   for (const child of childComments) {
-    children.appendChild(buildCommentNode(child, byParent, depth + 1));
+    children.appendChild(buildCommentNode(postId, child, byParent));
   }
 
   return node;
 }
 
-async function addComment({ author, body, parentId = null }) {
-  if (!currentThread) return;
-
-  const commentsRef = collection(
-    db,
-    "semesters",
-    BOARD_INFO.semester,
-    "classes",
-    BOARD_INFO.classCode,
-    "topics",
-    BOARD_INFO.topic,
-    "codes",
-    BOARD_INFO.code,
-    "threads",
-    currentThread.id,
-    "comments"
-  );
-
-  await addDoc(commentsRef, {
+async function addComment(postId, { author, body, parentId = null }) {
+  await addDoc(commentsRefForPost(postId), {
     author: author.trim(),
     body: body.trim(),
     parentId,
     createdAt: serverTimestamp()
   });
 
-  await updateDoc(doc(
-    db,
-    "semesters",
-    BOARD_INFO.semester,
-    "classes",
-    BOARD_INFO.classCode,
-    "topics",
-    BOARD_INFO.topic,
-    "codes",
-    BOARD_INFO.code,
-    "threads",
-    currentThread.id
-  ), {
+  await updateDoc(postDocRef(postId), {
     commentCount: increment(1),
     updatedAt: serverTimestamp()
+  });
+}
+
+function listenForThreads() {
+  const q = query(threadsRef, orderBy("createdAt", "desc"));
+
+  onSnapshot(q, snapshot => {
+    allThreads = snapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
+
+    renderThreadList();
+  }, error => {
+    threadList.innerHTML = `<div class="emptyState">Could not load posts. Check your Firebase config and Firestore rules.</div>`;
+    console.error(error);
   });
 }
 
@@ -446,49 +477,31 @@ newThreadForm.addEventListener("submit", async event => {
   }
 });
 
-topReplyToggle.addEventListener("click", () => {
-  topReplyForm.classList.remove("hidden");
-  topReplyToggle.classList.add("hidden");
-  topReplyForm.author.focus();
-});
+expandAllBtn.addEventListener("click", () => {
+  const visibleThreads = getVisibleThreads();
+  const allVisibleExpanded =
+    visibleThreads.length > 0 && visibleThreads.every(thread => expandedPostIds.has(thread.id));
 
-topReplyCancel.addEventListener("click", () => {
-  resetTopReplyUI();
-});
-
-topReplyForm.addEventListener("submit", async event => {
-  event.preventDefault();
-
-  if (topReplyPostButton.disabled) return;
-
-  const replyData = {
-    author: topReplyForm.author.value,
-    body: topReplyForm.body.value,
-    parentId: null
-  };
-
-  setTopReplySaving(true);
-
-  try {
-    await addComment(replyData);
-    resetTopReplyUI();
-  } catch (error) {
-    console.error("Could not post reply. Check Firebase config and Firestore rules.", error);
-    alert("The reply could not be saved. Check your Firebase config and Firestore rules.");
-    topReplySaving.classList.add("hidden");
-    topReplyForm.classList.remove("hidden");
-    topReplyToggle.classList.add("hidden");
-
-    topReplyForm.author.disabled = false;
-    topReplyForm.body.disabled = false;
-    topReplyPostButton.disabled = false;
-    topReplyCancel.disabled = false;
+  if (allVisibleExpanded) {
+    for (const thread of visibleThreads) {
+      expandedPostIds.delete(thread.id);
+      stopListeningForComments(thread.id);
+    }
+  } else {
+    for (const thread of visibleThreads) {
+      expandedPostIds.add(thread.id);
+      listenForComments(thread.id);
+    }
   }
+
+  renderThreadList();
 });
 
-backBtn.addEventListener("click", showThreadList);
 homeButton.addEventListener("click", showThreadList);
-searchInput.addEventListener("input", renderThreadList);
+
+searchInput.addEventListener("input", () => {
+  renderThreadList();
+});
 
 pageTitle.textContent = `${formatClassCode(BOARD_INFO.classCode)}: ${formatTopicTitle(BOARD_INFO.topic)}`;
 

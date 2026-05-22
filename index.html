@@ -18,7 +18,6 @@
 
   <main class="app">
     <section id="threadListView" class="panel">
-
       <div class="privacyNotice">
         <strong>Reminder:</strong> Do not post any private, personal, or sensitive information on this discussion board.
       </div>
@@ -27,41 +26,12 @@
         <h2>Posts</h2>
         <div class="panelActions">
           <input id="searchInput" type="search" placeholder="Search posts..." />
+          <button id="expandAllBtn" class="secondary">Expand All</button>
           <button id="newThreadBtn" class="primary newPostButton">New Post</button>
         </div>
       </div>
+
       <div id="threadList" class="threadList"></div>
-    </section>
-
-    <section id="threadView" class="panel hidden">
-      <button id="backBtn" class="linkButton">← Back to Posts</button>
-
-      <article class="threadPageHeader">
-        <h2 id="threadTitle"></h2>
-        <div id="threadMeta" class="meta"></div>
-        <p id="threadBody"></p>
-      </article>
-
-      <section class="threadActions">
-        <button id="topReplyToggle" class="linkButton">Reply</button>
-        <form id="topReplyForm" class="inlineReplyForm hidden">
-          <input name="author" placeholder="Your name" required />
-          <textarea name="body" placeholder="Write your reply..." required></textarea>
-          <div class="formActions">
-            <button id="topReplyPostButton" type="submit" class="primary small">Post Reply</button>
-            <button type="button" id="topReplyCancel" class="secondary small">Cancel</button>
-          </div>
-        </form>
-        <div id="topReplySaving" class="savingIndicator hidden" aria-live="polite">
-          <span class="spinner"></span>
-          <span>Posting reply...</span>
-        </div>
-      </section>
-
-      <section>
-        <h3>Comments</h3>
-        <div id="commentsTree" class="commentsTree"></div>
-      </section>
     </section>
   </main>
 
@@ -81,6 +51,44 @@
       </div>
     </form>
   </dialog>
+
+  <template id="postTemplate">
+    <article class="postCard">
+      <button class="postSummary">
+        <div class="postSummaryText">
+          <h3 class="postTitle"></h3>
+          <div class="meta postMeta"></div>
+          <p class="postPreview"></p>
+        </div>
+        <div class="expandIndicator">+</div>
+      </button>
+
+      <div class="postExpanded hidden">
+        <p class="postBody"></p>
+
+        <section class="threadActions">
+          <button class="topReplyToggle linkButton">Reply</button>
+          <form class="topReplyForm inlineReplyForm hidden">
+            <input name="author" placeholder="Your name" required />
+            <textarea name="body" placeholder="Write your reply..." required></textarea>
+            <div class="formActions">
+              <button type="submit" class="topReplyPostButton primary small">Post Reply</button>
+              <button type="button" class="topReplyCancel secondary small">Cancel</button>
+            </div>
+          </form>
+          <div class="topReplySaving savingIndicator hidden" aria-live="polite">
+            <span class="spinner"></span>
+            <span>Posting reply...</span>
+          </div>
+        </section>
+
+        <section>
+          <h4>Comments</h4>
+          <div class="commentsTree"></div>
+        </section>
+      </div>
+    </article>
+  </template>
 
   <template id="commentTemplate">
     <div class="comment">
