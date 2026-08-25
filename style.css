@@ -172,13 +172,14 @@ textarea:disabled {
 
 .threadList {
   display: grid;
-  gap: 0.75rem;
+  gap: 1.25rem;
 }
 
 .postCard {
-  border: 1px solid #e3e7ef;
+  border: 1px solid #cbd5e1;
   border-radius: 12px;
-  background: #fbfcff;
+  background: #f1f5f9;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
   overflow: hidden;
 }
 
@@ -192,7 +193,7 @@ textarea:disabled {
 }
 
 .postSummary:hover {
-  background: #f8fbff;
+  background: #eaf1f8;
 }
 
 .expandPostButton {
