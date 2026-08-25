@@ -275,8 +275,13 @@ function buildPostNode(thread, options = {}) {
   node.querySelector(".postTitle").textContent = thread.title || "Untitled post";
   node.querySelector(".postMeta").textContent =
     `${thread.commentCount || 0} comments · posted by ${thread.author || "Anonymous"} · ${formatDate(thread.createdAt)}`;
-  node.querySelector(".postPreview").textContent = plainPreview(thread.body);
-  node.querySelector(".postBody").textContent = thread.body || "";
+  const postPreview = node.querySelector(".postPreview");
+
+  postPreview.textContent = isExpanded
+    ? (thread.body || "")
+    : plainPreview(thread.body);
+
+  postPreview.classList.toggle("fullPostBody", isExpanded);
 
   expandedArea.classList.toggle("hidden", !isExpanded);
   expandButton.textContent = isExpanded ? "−" : "+";

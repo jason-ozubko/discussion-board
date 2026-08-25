@@ -243,6 +243,11 @@ textarea:disabled {
   color: #4b5563;
 }
 
+.postPreview.fullPostBody {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
 .postCard.expanded .expandPostButton {
   background: #dbeafe;
 }
@@ -251,12 +256,6 @@ textarea:disabled {
   border-top: 1px solid #e3e7ef;
   padding: 1rem;
   background: #ffffff;
-}
-
-.postBody {
-  white-space: pre-wrap;
-  margin: 0 0 1rem;
-  line-height: 1.5;
 }
 
 .meta {
@@ -384,10 +383,6 @@ dialog::backdrop {
 
 #singlePostContainer .postSummary {
   background: #ffffff;
-}
-
-#singlePostContainer .postPreview {
-  display: none;
 }
 
 @media (max-width: 650px) {
