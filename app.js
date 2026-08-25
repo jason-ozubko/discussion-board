@@ -128,6 +128,88 @@ function plainPreview(text, maxLength = 170) {
   return cleaned.slice(0, maxLength).trim() + "…";
 }
 
+function searchPreview(text, searchTerm) {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  const matchIndex = cleaned.toLowerCase().indexOf(searchTerm.toLowerCase());
+
+  if (!searchTerm || matchIndex === -1 || cleaned.length <= 170) {
+    return plainPreview(cleaned);
+  }
+
+  const start = Math.max(0, matchIndex - 70);
+  const end = Math.min(
+    cleaned.length,
+    matchIndex + searchTerm.length + 90
+  );
+
+  const excerpt = cleaned.slice(start, end).trim();
+
+  return `${start > 0 ? "…" : ""}${excerpt}${
+    end < cleaned.length ? "…" : ""
+  }`;
+}
+
+
+function setHighlightedText(element, text, searchTerm) {
+  const value = String(text || "");
+  const term = String(searchTerm || "").trim();
+
+  element.textContent = "";
+
+  if (!term) {
+    element.textContent = value;
+    return;
+  }
+
+  const lowerValue = value.toLowerCase();
+  const lowerTerm = term.toLowerCase();
+
+  let cursor = 0;
+  let matchIndex = lowerValue.indexOf(lowerTerm);
+
+  while (matchIndex !== -1) {
+    element.appendChild(
+      document.createTextNode(value.slice(cursor, matchIndex))
+    );
+
+    const mark = document.createElement("mark");
+    mark.className = "searchHighlight";
+    mark.textContent = value.slice(
+      matchIndex,
+      matchIndex + term.length
+    );
+
+    element.appendChild(mark);
+
+    cursor = matchIndex + term.length;
+    matchIndex = lowerValue.indexOf(lowerTerm, cursor);
+  }
+
+  element.appendChild(
+    document.createTextNode(value.slice(cursor))
+  );
+}
+
+
+function setHighlightedMeta(element, thread, searchTerm) {
+  const author = thread.author || "Anonymous";
+
+  element.textContent =
+    `${thread.commentCount || 0} comments · posted by `;
+
+  const authorSpan = document.createElement("span");
+
+  setHighlightedText(authorSpan, author, searchTerm);
+
+  element.appendChild(authorSpan);
+
+  element.appendChild(
+    document.createTextNode(
+      ` · ${formatDate(thread.createdAt)}`
+    )
+  );
+}
+
 function setNewThreadFormSaving(isSaving) {
   newThreadForm.title.disabled = isSaving;
   newThreadForm.author.disabled = isSaving;
@@ -265,21 +347,40 @@ function renderThreadList() {
 function buildPostNode(thread, options = {}) {
   const node = postTemplate.content.firstElementChild.cloneNode(true);
 
-  const isExpanded = options.singleView || expandedPostIds.has(thread.id);
+  const isExpanded =
+    options.singleView || expandedPostIds.has(thread.id);
+
+  const searchTerm = searchInput.value.trim();
+
   node.classList.toggle("expanded", isExpanded);
 
   const expandButton = node.querySelector(".expandPostButton");
   const titleButton = node.querySelector(".postTitleButton");
   const expandedArea = node.querySelector(".postExpanded");
 
-  node.querySelector(".postTitle").textContent = thread.title || "Untitled post";
-  node.querySelector(".postMeta").textContent =
-    `${thread.commentCount || 0} comments · posted by ${thread.author || "Anonymous"} · ${formatDate(thread.createdAt)}`;
+  setHighlightedText(
+    node.querySelector(".postTitle"),
+    thread.title || "Untitled post",
+    searchTerm
+  );
+
+  setHighlightedMeta(
+    node.querySelector(".postMeta"),
+    thread,
+    searchTerm
+  );
+
   const postPreview = node.querySelector(".postPreview");
 
-  postPreview.textContent = isExpanded
+  const visiblePostText = isExpanded
     ? (thread.body || "")
-    : plainPreview(thread.body);
+    : searchPreview(thread.body, searchTerm);
+
+  setHighlightedText(
+    postPreview,
+    visiblePostText,
+    searchTerm
+  );
 
   postPreview.classList.toggle("fullPostBody", isExpanded);
 
