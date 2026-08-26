@@ -184,18 +184,19 @@ button {
 }
 
 #expandAllBtn:not(:disabled) {
-  border: 1px solid #93c5fd;
-  background: #dbeafe;
-  color: #1d4ed8;
+  border: 1px solid #3b82f6;
+  background: #3b82f6;
+  color: #ffffff;
 }
 
 #expandAllBtn:not(:disabled):hover {
-  background: #bfdbfe;
+  border-color: #2563eb;
+  background: #2563eb;
 }
 
 #expandAllBtn.repliesShown:not(:disabled) {
-  border-color: #2563eb;
-  background: #2563eb;
+  border-color: #3b82f6;
+  background: #3b82f6;
   color: #ffffff;
 }
 
@@ -270,10 +271,10 @@ textarea:disabled {
   flex: 0 0 auto;
   width: 2rem;
   height: 2rem;
-  border: 1px solid #93c5fd;
+  border: 1px solid #3b82f6;
   border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #3b82f6;
+  color: #ffffff;
   font-weight: 900;
   font-size: 1.25rem;
   line-height: 1;
@@ -281,7 +282,8 @@ textarea:disabled {
 }
 
 .expandPostButton:hover {
-  background: #bfdbfe;
+  border-color: #2563eb;
+  background: #2563eb;
 }
 
 .expandPostButton:disabled {
@@ -338,8 +340,8 @@ textarea:disabled {
 }
 
 .postCard.expanded .expandPostButton {
-  border-color: #2563eb;
-  background: #2563eb;
+  border-color: #3b82f6;
+  background: #3b82f6;
   color: #ffffff;
 }
 
@@ -362,8 +364,22 @@ textarea:disabled {
 }
 
 .replyCount {
-  color: #6b7280;
+  color: #2563eb;
   font-size: 0.88rem;
+}
+
+.replyCount:not(:disabled):hover {
+  text-decoration: underline;
+}
+
+.replyCount:disabled {
+  color: #9ca3af;
+  cursor: default;
+  opacity: 1;
+}
+
+.replyCount.repliesVisible:disabled {
+  color: #2563eb;
 }
 
 form {
