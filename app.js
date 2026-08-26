@@ -83,6 +83,7 @@ const pathPartsToThreads = [
   "threads"
 ];
 
+const ENABLE_POST_DISPLAY_TOGGLE = false;
 const threadsRef = collection(db, ...pathPartsToThreads);
 
 const threadListView = document.querySelector("#threadListView");
@@ -115,16 +116,18 @@ let unsubscribeByPostId = new Map();
 let commentsByPostId = new Map();
 let postDisplayMode = "full";
 
-try {
-  postDisplayMode =
-    localStorage.getItem("discussionBoardPostDisplayModeV2") === "preview"
-      ? "preview"
-      : "full";
-} catch (error) {
-  console.warn(
-    "Could not load the saved message display preference.",
-    error
-  );
+if (ENABLE_POST_DISPLAY_TOGGLE) {
+  try {
+    postDisplayMode =
+      localStorage.getItem("discussionBoardPostDisplayModeV2") === "preview"
+        ? "preview"
+        : "full";
+  } catch (error) {
+    console.warn(
+      "Could not load the saved message display preference.",
+      error
+    );
+  }
 }
 
 function formatDate(timestamp) {
@@ -209,9 +212,7 @@ function setHighlightedText(element, text, searchTerm) {
 
 function setHighlightedMeta(element, thread, searchTerm) {
   const author = thread.author || "Anonymous";
-
-  element.textContent =
-    `${thread.commentCount || 0} comments · posted by `;
+  element.textContent = "posted by ";
 
   const authorSpan = document.createElement("span");
 
