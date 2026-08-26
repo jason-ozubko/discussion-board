@@ -29,7 +29,12 @@
         </div>
         <div class="panelActions">
           <input id="searchInput" type="search" placeholder="Search posts..." />
-          <button id="expandAllBtn" class="secondary">Expand All</button>
+          <div class="displayModeControl" role="group" aria-label="Post message display">
+            <span class="displayModeLabel">Messages</span>
+            <button type="button" class="displayModeButton" data-display-mode="full" aria-pressed="true">Full</button>
+            <button type="button" class="displayModeButton" data-display-mode="preview" aria-pressed="false">Preview</button>
+          </div>
+          <button id="expandAllBtn" class="secondary">Show All Replies</button>
           <button id="newThreadBtn" class="primary newPostButton">New Post</button>
         </div>
       </div>
@@ -70,12 +75,12 @@
           </button>
           <div class="meta postMeta"></div>
           <p class="postPreview"></p>
-        </div>
-      </div>
 
-      <div class="postExpanded hidden">
-        <section class="threadActions">
-          <button class="topReplyToggle linkButton">Reply</button>
+          <div class="postThreadActions">
+            <button class="topReplyToggle linkButton">Reply</button>
+            <span class="replyCount"></span>
+          </div>
+
           <form class="topReplyForm inlineReplyForm hidden">
             <input name="author" placeholder="Your name" required />
             <textarea name="body" placeholder="Write your reply..." required></textarea>
@@ -88,12 +93,11 @@
             <span class="spinner"></span>
             <span>Posting reply...</span>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <section>
-          <h4>Comments</h4>
-          <div class="commentsTree"></div>
-        </section>
+      <div class="postExpanded hidden">
+        <div class="commentsTree"></div>
       </div>
     </article>
   </template>

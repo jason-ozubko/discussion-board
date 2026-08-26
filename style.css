@@ -107,6 +107,44 @@ body {
   gap: 0.75rem;
 }
 
+.displayModeControl {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f3f4f6;
+  white-space: nowrap;
+}
+
+.displayModeLabel {
+  padding: 0 0.45rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.displayModeButton {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  background: transparent;
+  color: #4b5563;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.displayModeButton:hover {
+  color: #1d4ed8;
+}
+
+.displayModeButton.selected {
+  background: #ffffff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14);
+}
+
 input,
 textarea {
   width: 100%;
@@ -225,6 +263,15 @@ textarea:disabled {
   background: #dbeafe;
 }
 
+.expandPostButton:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.expandPostButton:disabled:hover {
+  background: #eef2ff;
+}
+
 .postSummaryText {
   min-width: 0;
   flex: 1 1 auto;
@@ -281,10 +328,16 @@ textarea:disabled {
   font-size: 0.9rem;
 }
 
-.threadActions {
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
+.postThreadActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+
+.replyCount {
+  color: #6b7280;
+  font-size: 0.88rem;
 }
 
 form {

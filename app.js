@@ -104,6 +104,7 @@ const pageTitle = document.querySelector("#pageTitle");
 const contextLabel = document.querySelector("#contextLabel");
 const homeButton = document.querySelector("#homeButton");
 const expandAllBtn = document.querySelector("#expandAllBtn");
+const displayModeButtons = document.querySelectorAll(".displayModeButton");
 const postTemplate = document.querySelector("#postTemplate");
 const commentTemplate = document.querySelector("#commentTemplate");
 
@@ -112,6 +113,19 @@ let expandedPostIds = new Set();
 let activeSinglePostId = null;
 let unsubscribeByPostId = new Map();
 let commentsByPostId = new Map();
+let postDisplayMode = "full";
+
+try {
+  postDisplayMode =
+    localStorage.getItem("discussionBoardPostDisplayModeV2") === "preview"
+      ? "preview"
+      : "full";
+} catch (error) {
+  console.warn(
+    "Could not load the saved message display preference.",
+    error
+  );
+}
 
 function formatDate(timestamp) {
   if (!timestamp || !timestamp.toDate) return "just now";
@@ -233,11 +247,53 @@ function getVisibleThreads() {
 }
 
 function updateExpandAllButton() {
-  const visibleThreads = getVisibleThreads();
-  const allVisibleExpanded =
-    visibleThreads.length > 0 && visibleThreads.every(thread => expandedPostIds.has(thread.id));
+  const visibleThreads = getVisibleThreads().filter(
+    thread => Number(thread.commentCount || 0) > 0
+  );
 
-  expandAllBtn.textContent = allVisibleExpanded ? "Collapse All" : "Expand All";
+  const allVisibleExpanded =
+    visibleThreads.length > 0 &&
+    visibleThreads.every(thread =>
+      expandedPostIds.has(thread.id)
+    );
+
+  expandAllBtn.disabled = visibleThreads.length === 0;
+
+  expandAllBtn.textContent = allVisibleExpanded
+    ? "Hide All Replies"
+    : "Show All Replies";
+}
+
+function setPostDisplayMode(mode, shouldSave = true) {
+  postDisplayMode = mode === "full" ? "full" : "preview";
+
+  for (const button of displayModeButtons) {
+    const isSelected =
+      button.dataset.displayMode === postDisplayMode;
+
+    button.classList.toggle("selected", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+  }
+
+  if (shouldSave) {
+    try {
+      localStorage.setItem(
+        "discussionBoardPostDisplayModeV2",
+        postDisplayMode
+      );
+    } catch (error) {
+      console.warn(
+        "Could not save the message display preference.",
+        error
+      );
+    }
+  }
+
+  if (activeSinglePostId) {
+    renderSinglePost();
+  } else {
+    renderThreadList();
+  }
 }
 
 function pluralize(count, singular, plural = `${singular}s`) {
@@ -387,18 +443,40 @@ function renderThreadList() {
 }
 
 function buildPostNode(thread, options = {}) {
-  const node = postTemplate.content.firstElementChild.cloneNode(true);
+  const node =
+    postTemplate.content.firstElementChild.cloneNode(true);
 
   const isExpanded =
     options.singleView || expandedPostIds.has(thread.id);
 
+  const replyCount = Number(thread.commentCount || 0);
+  const hasReplies = replyCount > 0;
+
+  const showFullPost =
+    options.singleView || postDisplayMode === "full";
+
   const searchTerm = searchInput.value.trim();
 
-  node.classList.toggle("expanded", isExpanded);
+  node.classList.toggle(
+    "expanded",
+    isExpanded && hasReplies
+  );
 
-  const expandButton = node.querySelector(".expandPostButton");
-  const titleButton = node.querySelector(".postTitleButton");
-  const expandedArea = node.querySelector(".postExpanded");
+  const expandButton =
+    node.querySelector(".expandPostButton");
+
+  const titleButton =
+    node.querySelector(".postTitleButton");
+
+  const expandedArea =
+    node.querySelector(".postExpanded");
+
+  node.querySelector(".replyCount").textContent =
+    `${replyCount} ${pluralize(
+      replyCount,
+      "reply",
+      "replies"
+    )}`;
 
   setHighlightedText(
     node.querySelector(".postTitle"),
@@ -412,9 +490,10 @@ function buildPostNode(thread, options = {}) {
     searchTerm
   );
 
-  const postPreview = node.querySelector(".postPreview");
+  const postPreview =
+    node.querySelector(".postPreview");
 
-  const visiblePostText = isExpanded
+  const visiblePostText = showFullPost
     ? (thread.body || "")
     : searchPreview(thread.body, searchTerm);
 
@@ -424,18 +503,42 @@ function buildPostNode(thread, options = {}) {
     searchTerm
   );
 
-  postPreview.classList.toggle("fullPostBody", isExpanded);
+  postPreview.classList.toggle(
+    "fullPostBody",
+    showFullPost
+  );
 
-  expandedArea.classList.toggle("hidden", !isExpanded);
-  expandButton.textContent = isExpanded ? "−" : "+";
-  expandButton.setAttribute("aria-label", isExpanded ? "Collapse post" : "Expand post");
+  expandedArea.classList.toggle(
+    "hidden",
+    !isExpanded || !hasReplies
+  );
+
+  expandButton.disabled = !hasReplies;
+
+  expandButton.textContent =
+    isExpanded && hasReplies ? "−" : "+";
+
+  expandButton.setAttribute(
+    "aria-label",
+    !hasReplies
+      ? "No replies to show"
+      : isExpanded
+        ? "Hide replies"
+        : "Show replies"
+  );
 
   if (options.singleView) {
     expandButton.classList.add("hidden");
   } else {
     expandButton.addEventListener("click", event => {
       event.stopPropagation();
-      setPostExpanded(thread.id, !expandedPostIds.has(thread.id));
+
+      if (!hasReplies) return;
+
+      setPostExpanded(
+        thread.id,
+        !expandedPostIds.has(thread.id)
+      );
     });
 
     titleButton.addEventListener("click", event => {
@@ -444,8 +547,9 @@ function buildPostNode(thread, options = {}) {
     });
   }
 
-  if (isExpanded) {
-    setupTopReplyUI(node, thread);
+  setupTopReplyUI(node, thread);
+
+  if (isExpanded && hasReplies) {
     renderCommentsForPost(node, thread);
   }
 
@@ -533,7 +637,6 @@ function renderCommentsForPost(postNode, thread) {
   commentsTree.innerHTML = "";
 
   if (comments.length === 0) {
-    commentsTree.innerHTML = `<div class="emptyState">No comments yet. Be the first to reply.</div>`;
     return;
   }
 
@@ -679,9 +782,15 @@ newThreadForm.addEventListener("submit", async event => {
 });
 
 expandAllBtn.addEventListener("click", () => {
-  const visibleThreads = getVisibleThreads();
+  const visibleThreads = getVisibleThreads().filter(
+    thread => Number(thread.commentCount || 0) > 0
+  );
+
   const allVisibleExpanded =
-    visibleThreads.length > 0 && visibleThreads.every(thread => expandedPostIds.has(thread.id));
+    visibleThreads.length > 0 &&
+    visibleThreads.every(thread =>
+      expandedPostIds.has(thread.id)
+    );
 
   if (allVisibleExpanded) {
     for (const thread of visibleThreads) {
@@ -698,6 +807,12 @@ expandAllBtn.addEventListener("click", () => {
   renderThreadList();
 });
 
+for (const button of displayModeButtons) {
+  button.addEventListener("click", () => {
+    setPostDisplayMode(button.dataset.displayMode);
+  });
+}
+
 homeButton.addEventListener("click", showThreadList);
 backBtn.addEventListener("click", showThreadList);
 
@@ -712,4 +827,5 @@ contextLabel.textContent =
 
 document.title = pageTitle.textContent;
 
+setPostDisplayMode(postDisplayMode, false);
 listenForThreads();
