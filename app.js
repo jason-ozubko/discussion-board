@@ -585,8 +585,7 @@ function buildPostNode(thread, options = {}) {
 
   replyCountButton.disabled =
     !hasReplies ||
-    options.singleView ||
-    hasMatchingReply;
+    options.singleView;
 
   replyCountButton.classList.toggle(
     "repliesVisible",
@@ -652,19 +651,37 @@ function buildPostNode(thread, options = {}) {
         : "Show replies"
   );
 
-  if (options.singleView || hasMatchingReply) {
-    expandButton.classList.add("hidden");
-  } else {
-    const toggleReplies = event => {
+  const toggleReplies = event => {
+  event.stopPropagation();
+
+  if (!hasReplies) return;
+
+  setPostExpanded(
+    thread.id,
+    !expandedPostIds.has(thread.id)
+  );
+};
+
+if (!options.singleView) {
+  replyCountButton.addEventListener(
+    "click",
+    toggleReplies
+  );
+
+  titleButton.addEventListener("click", event => {
     event.stopPropagation();
+    showSinglePost(thread);
+  });
+}
 
-    if (!hasReplies) return;
-
-    setPostExpanded(
-      thread.id,
-      !expandedPostIds.has(thread.id)
-    );
-  };
+if (options.singleView || hasMatchingReply) {
+  expandButton.classList.add("hidden");
+} else {
+  expandButton.addEventListener(
+    "click",
+    toggleReplies
+  );
+}
 
   expandButton.addEventListener(
     "click",
