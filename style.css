@@ -11,10 +11,11 @@ body {
 
 .topbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem clamp(1rem, 4vw, 3rem);
+  padding: 0.85rem clamp(1rem, 4vw, 3rem);
   background: #ffffff;
   border-bottom: 1px solid #d9dde5;
   position: sticky;
@@ -25,6 +26,17 @@ body {
 .topbar h1 {
   margin: 0;
   font-size: 1.5rem;
+}
+
+.topbarIdentity {
+  min-width: 0;
+  flex: 1 1 280px;
+}
+
+.topbarActions {
+  flex: 1 1 540px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .homeButton {
@@ -77,22 +89,6 @@ body {
   background: #fffbeb;
   color: #92400e;
   line-height: 1.4;
-}
-
-.panelHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.panelHeader h2 {
-  margin: 0;
-}
-
-.panelHeading {
-  min-width: 0;
 }
 
 .boardStats {
@@ -457,8 +453,7 @@ dialog::backdrop {
 }
 
 @media (max-width: 650px) {
-  .topbar,
-  .panelHeader {
+  .topbar {
     align-items: stretch;
     flex-direction: column;
   }

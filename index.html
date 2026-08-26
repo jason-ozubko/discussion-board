@@ -8,11 +8,23 @@
 </head>
 <body>
   <header class="topbar">
-    <div>
+    <div class="topbarIdentity">
       <button id="homeButton" class="homeButton">
         <h1 id="pageTitle">Class Discussion Board</h1>
         <p id="contextLabel" class="contextLabel"></p>
       </button>
+      <p id="boardStats" class="boardStats" aria-live="polite"></p>
+    </div>
+
+    <div class="panelActions topbarActions">
+      <input id="searchInput" type="search" placeholder="Search posts and replies..." />
+      <div class="displayModeControl hidden" role="group" aria-label="Post message display">
+        <span class="displayModeLabel">Messages</span>
+        <button type="button" class="displayModeButton" data-display-mode="full" aria-pressed="true">Full</button>
+        <button type="button" class="displayModeButton" data-display-mode="preview" aria-pressed="false">Preview</button>
+      </div>
+      <button id="expandAllBtn" class="secondary">Show All Replies</button>
+      <button id="newThreadBtn" class="primary newPostButton">New Post</button>
     </div>
   </header>
 
@@ -20,23 +32,6 @@
     <section id="threadListView" class="panel">
       <div class="privacyNotice">
         <strong>Reminder:</strong> Do not post any private, personal, or sensitive information on this discussion board.
-      </div>
-
-      <div class="panelHeader">
-        <div class="panelHeading">
-          <h2>Posts</h2>
-          <p id="boardStats" class="boardStats" aria-live="polite"></p>
-        </div>
-        <div class="panelActions">
-          <input id="searchInput" type="search" placeholder="Search posts..." />
-          <div class="displayModeControl hidden" role="group" aria-label="Post message display">
-            <span class="displayModeLabel">Messages</span>
-            <button type="button" class="displayModeButton" data-display-mode="full" aria-pressed="true">Full</button>
-            <button type="button" class="displayModeButton" data-display-mode="preview" aria-pressed="false">Preview</button>
-          </div>
-          <button id="expandAllBtn" class="secondary">Show All Replies</button>
-          <button id="newThreadBtn" class="primary newPostButton">New Post</button>
-        </div>
       </div>
 
       <div id="threadList" class="threadList"></div>
