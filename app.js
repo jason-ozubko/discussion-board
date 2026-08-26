@@ -92,6 +92,8 @@ const backBtn = document.querySelector("#backBtn");
 
 const threadList = document.querySelector("#threadList");
 const searchInput = document.querySelector("#searchInput");
+const boardStats = document.querySelector("#boardStats");
+
 const newThreadBtn = document.querySelector("#newThreadBtn");
 const newThreadDialog = document.querySelector("#newThreadDialog");
 const newThreadForm = document.querySelector("#newThreadForm");
@@ -238,6 +240,43 @@ function updateExpandAllButton() {
   expandAllBtn.textContent = allVisibleExpanded ? "Collapse All" : "Expand All";
 }
 
+function pluralize(count, singular, plural = `${singular}s`) {
+  return count === 1 ? singular : plural;
+}
+
+
+function updateBoardStats(visibleThreads) {
+  if (!boardStats) return;
+
+  const totalThreads = allThreads.length;
+
+  const totalReplies = allThreads.reduce(
+    (sum, thread) => sum + Number(thread.commentCount || 0),
+    0
+  );
+
+  const searchTerm = searchInput.value.trim();
+
+  if (!searchTerm) {
+    boardStats.textContent =
+      `${totalThreads} ${pluralize(totalThreads, "thread")} · ` +
+      `${totalReplies} ${pluralize(totalReplies, "reply", "replies")}`;
+
+    return;
+  }
+
+  const visibleReplies = visibleThreads.reduce(
+    (sum, thread) => sum + Number(thread.commentCount || 0),
+    0
+  );
+
+  boardStats.textContent =
+    `${visibleThreads.length} of ${totalThreads} ` +
+    `${pluralize(totalThreads, "thread")} shown · ` +
+    `${visibleReplies} of ${totalReplies} ` +
+    `${pluralize(totalReplies, "reply", "replies")} included`;
+}
+
 function showThreadList() {
   activeSinglePostId = null;
   singlePostView.classList.add("hidden");
@@ -329,6 +368,9 @@ function setPostExpanded(postId, shouldExpand) {
 
 function renderThreadList() {
   const visibleThreads = getVisibleThreads();
+
+  updateBoardStats(visibleThreads);
+
   threadList.innerHTML = "";
 
   if (visibleThreads.length === 0) {

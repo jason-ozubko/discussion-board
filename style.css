@@ -91,6 +91,16 @@ body {
   margin: 0;
 }
 
+.panelHeading {
+  min-width: 0;
+}
+
+.boardStats {
+  margin: 0.3rem 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
 .panelActions {
   display: flex;
   align-items: center;
@@ -247,6 +257,13 @@ textarea:disabled {
 .postPreview.fullPostBody {
   white-space: pre-wrap;
   line-height: 1.5;
+}
+
+.searchHighlight {
+  padding: 0 0.1em;
+  border-radius: 3px;
+  background: #fef08a;
+  color: #713f12;
 }
 
 .postCard.expanded .expandPostButton {
