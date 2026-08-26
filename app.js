@@ -316,6 +316,11 @@ function updateExpandAllButton() {
 
   expandAllBtn.disabled = visibleThreads.length === 0;
 
+  expandAllBtn.classList.toggle(
+    "repliesShown",
+    allVisibleExpanded
+  );
+
   expandAllBtn.textContent = allVisibleExpanded
     ? "Hide All Replies"
     : "Show All Replies";

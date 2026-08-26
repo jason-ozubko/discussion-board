@@ -183,6 +183,30 @@ button {
   color: #111827;
 }
 
+#expandAllBtn:not(:disabled) {
+  border: 1px solid #93c5fd;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+#expandAllBtn:not(:disabled):hover {
+  background: #bfdbfe;
+}
+
+#expandAllBtn.repliesShown:not(:disabled) {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+#expandAllBtn:disabled {
+  border: 1px solid #d1d5db;
+  background: #e5e7eb;
+  color: #9ca3af;
+  opacity: 1;
+  cursor: default;
+}
+
 .primary:disabled,
 .secondary:disabled,
 input:disabled,
@@ -246,26 +270,30 @@ textarea:disabled {
   flex: 0 0 auto;
   width: 2rem;
   height: 2rem;
-  border: 0;
+  border: 1px solid #93c5fd;
   border-radius: 999px;
-  background: #eef2ff;
-  color: #3730a3;
+  background: #dbeafe;
+  color: #1d4ed8;
   font-weight: 900;
   font-size: 1.25rem;
   line-height: 1;
+  transition: background 120ms, border-color 120ms, color 120ms;
 }
 
 .expandPostButton:hover {
-  background: #dbeafe;
+  background: #bfdbfe;
 }
 
 .expandPostButton:disabled {
   cursor: default;
-  opacity: 0.35;
+  border-color: #d1d5db;
+  background: #e5e7eb;
+  color: #9ca3af;
+  opacity: 1;
 }
 
 .expandPostButton:disabled:hover {
-  background: #eef2ff;
+  background: #e5e7eb;
 }
 
 .postSummaryText {
@@ -310,7 +338,9 @@ textarea:disabled {
 }
 
 .postCard.expanded .expandPostButton {
-  background: #dbeafe;
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
 }
 
 .postExpanded {
