@@ -567,18 +567,41 @@ function buildPostNode(thread, options = {}) {
   const expandButton =
     node.querySelector(".expandPostButton");
 
+  const replyCountButton =
+    node.querySelector(".replyCount");
+
   const titleButton =
     node.querySelector(".postTitleButton");
 
   const expandedArea =
     node.querySelector(".postExpanded");
 
-  node.querySelector(".replyCount").textContent =
+  replyCountButton.textContent =
     `${replyCount} ${pluralize(
       replyCount,
       "reply",
       "replies"
     )}`;
+
+  replyCountButton.disabled =
+    !hasReplies ||
+    options.singleView ||
+    hasMatchingReply;
+
+  replyCountButton.classList.toggle(
+    "repliesVisible",
+    hasReplies &&
+      (options.singleView || hasMatchingReply)
+  );
+
+  replyCountButton.setAttribute(
+    "aria-label",
+    !hasReplies
+      ? "No replies to show"
+      : isExpanded
+        ? "Hide replies"
+        : "Show replies"
+  );
 
   setHighlightedText(
     node.querySelector(".postTitle"),
@@ -632,16 +655,26 @@ function buildPostNode(thread, options = {}) {
   if (options.singleView || hasMatchingReply) {
     expandButton.classList.add("hidden");
   } else {
-    expandButton.addEventListener("click", event => {
-      event.stopPropagation();
+    const toggleReplies = event => {
+    event.stopPropagation();
 
-      if (!hasReplies) return;
+    if (!hasReplies) return;
 
-      setPostExpanded(
-        thread.id,
-        !expandedPostIds.has(thread.id)
-      );
-    });
+    setPostExpanded(
+      thread.id,
+      !expandedPostIds.has(thread.id)
+    );
+  };
+
+  expandButton.addEventListener(
+    "click",
+    toggleReplies
+  );
+
+  replyCountButton.addEventListener(
+    "click",
+    toggleReplies
+  );
 
     titleButton.addEventListener("click", event => {
       event.stopPropagation();
