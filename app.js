@@ -114,6 +114,7 @@ let expandedPostIds = new Set();
 let activeSinglePostId = null;
 let unsubscribeByPostId = new Map();
 let commentsByPostId = new Map();
+let commentsLoadedPostIds = new Set();
 let postDisplayMode = "full";
 
 if (ENABLE_POST_DISPLAY_TOGGLE) {
@@ -239,12 +240,67 @@ function setNewThreadFormSaving(isSaving) {
 }
 
 function getVisibleThreads() {
-  const searchTerm = searchInput.value.trim().toLowerCase();
+  const searchTerm =
+    searchInput.value.trim().toLowerCase();
+
+  if (!searchTerm) return allThreads;
 
   return allThreads.filter(thread => {
-    const haystack = `${thread.title || ""} ${thread.body || ""} ${thread.author || ""}`.toLowerCase();
-    return haystack.includes(searchTerm);
+    const haystack =
+      `${thread.title || ""} ` +
+      `${thread.body || ""} ` +
+      `${thread.author || ""}`;
+
+    if (haystack.toLowerCase().includes(searchTerm)) {
+      return true;
+    }
+
+    return threadHasMatchingReply(
+      thread.id,
+      searchTerm
+    );
   });
+}
+
+
+function threadHasMatchingReply(
+  postId,
+  searchTerm = searchInput.value.trim().toLowerCase()
+) {
+  if (!searchTerm) return false;
+
+  const comments =
+    commentsByPostId.get(postId) || [];
+
+  return comments.some(comment => {
+    const haystack =
+      `${comment.author || ""} ${comment.body || ""}`;
+
+    return haystack
+      .toLowerCase()
+      .includes(searchTerm);
+  });
+}
+
+
+function ensureReplyDataForSearch() {
+  if (!searchInput.value.trim()) return;
+
+  for (const thread of allThreads) {
+    if (Number(thread.commentCount || 0) > 0) {
+      listenForComments(thread.id);
+    }
+  }
+}
+
+
+function replySearchIsLoading() {
+  if (!searchInput.value.trim()) return false;
+
+  return allThreads.some(thread =>
+    Number(thread.commentCount || 0) > 0 &&
+    !commentsLoadedPostIds.has(thread.id)
+  );
 }
 
 function updateExpandAllButton() {
@@ -389,14 +445,26 @@ function listenForComments(postId) {
       }))
     );
 
+    commentsLoadedPostIds.add(postId);
+
     if (activeSinglePostId === postId) {
       renderSinglePost();
     } else {
       renderThreadList();
     }
   }, error => {
-    console.error("Could not load comments.", error);
-  });
+      commentsLoadedPostIds.add(postId);
+
+      console.error(
+        "Could not load comments.",
+        error
+      );
+
+      if (!activeSinglePostId) {
+        renderThreadList();
+      }
+    }
+  );
 
   unsubscribeByPostId.set(postId, unsubscribe);
 }
@@ -409,6 +477,7 @@ function stopListeningForComments(postId) {
 
   unsubscribeByPostId.delete(postId);
   commentsByPostId.delete(postId);
+  commentsLoadedPostIds.delete(postId);
 }
 
 function setPostExpanded(postId, shouldExpand) {
@@ -424,6 +493,8 @@ function setPostExpanded(postId, shouldExpand) {
 }
 
 function renderThreadList() {
+  ensureReplyDataForSearch();
+
   const visibleThreads = getVisibleThreads();
 
   updateBoardStats(visibleThreads);
@@ -431,13 +502,33 @@ function renderThreadList() {
   threadList.innerHTML = "";
 
   if (visibleThreads.length === 0) {
-    threadList.innerHTML = `<div class="emptyState">No posts yet. Start the first one!</div>`;
+    const emptyState =
+      document.createElement("div");
+
+    emptyState.className = "emptyState";
+
+    if (searchInput.value.trim()) {
+      emptyState.textContent =
+        replySearchIsLoading()
+          ? "Searching posts and replies…"
+          : "No posts or replies match your search.";
+    } else {
+      emptyState.textContent =
+        "No posts yet. Start the first one!";
+    }
+
+    threadList.appendChild(emptyState);
     updateExpandAllButton();
+
     return;
   }
 
   for (const thread of visibleThreads) {
-    threadList.appendChild(buildPostNode(thread, { singleView: false }));
+    threadList.appendChild(
+      buildPostNode(thread, {
+        singleView: false
+      })
+    );
   }
 
   updateExpandAllButton();
@@ -447,8 +538,13 @@ function buildPostNode(thread, options = {}) {
   const node =
     postTemplate.content.firstElementChild.cloneNode(true);
 
+  const hasMatchingReply =
+    threadHasMatchingReply(thread.id);
+
   const isExpanded =
-    options.singleView || expandedPostIds.has(thread.id);
+    options.singleView ||
+    expandedPostIds.has(thread.id) ||
+    hasMatchingReply;
 
   const replyCount = Number(thread.commentCount || 0);
   const hasReplies = replyCount > 0;
@@ -528,7 +624,7 @@ function buildPostNode(thread, options = {}) {
         : "Show replies"
   );
 
-  if (options.singleView) {
+  if (options.singleView || hasMatchingReply) {
     expandButton.classList.add("hidden");
   } else {
     expandButton.addEventListener("click", event => {
@@ -657,11 +753,25 @@ function renderCommentsForPost(postNode, thread) {
 }
 
 function buildCommentNode(postId, comment, byParent) {
-  const node = commentTemplate.content.firstElementChild.cloneNode(true);
+  const node =
+  commentTemplate.content.firstElementChild.cloneNode(true);
 
-  node.querySelector(".commentAuthor").textContent = comment.author || "Anonymous";
-  node.querySelector(".commentDate").textContent = formatDate(comment.createdAt);
-  node.querySelector(".commentBody").textContent = comment.body || "";
+  const searchTerm = searchInput.value.trim();
+
+  setHighlightedText(
+    node.querySelector(".commentAuthor"),
+    comment.author || "Anonymous",
+    searchTerm
+  );
+
+  node.querySelector(".commentDate").textContent =
+    formatDate(comment.createdAt);
+
+  setHighlightedText(
+    node.querySelector(".commentBody"),
+    comment.body || "",
+    searchTerm
+  );
 
   const replyButton = node.querySelector(".replyToggle");
   const replyForm = node.querySelector(".inlineReplyForm");
@@ -818,6 +928,16 @@ homeButton.addEventListener("click", showThreadList);
 backBtn.addEventListener("click", showThreadList);
 
 searchInput.addEventListener("input", () => {
+  if (searchInput.value.trim()) {
+    ensureReplyDataForSearch();
+  } else {
+    for (const thread of allThreads) {
+      if (!expandedPostIds.has(thread.id)) {
+        stopListeningForComments(thread.id);
+      }
+    }
+  }
+
   renderThreadList();
 });
 
